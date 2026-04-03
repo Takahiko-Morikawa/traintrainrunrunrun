@@ -2,45 +2,54 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ライト乗換案内 Prototype v1.09</title>
+    <title>ライト乗換案内 Prototype v1.15</title>
     <style>
-        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --gray: #475569; }
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; color: #334155; line-height: 1.6; }
+        :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --gray: #475569; --light-blue: #eef2ff; }
+        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; color: #334155; line-height: 1.6; overflow-x: hidden; }
+        
+        /* 電車アニメーション */
+        .train-track { width: 100%; height: 40px; background: #e2e8f0; border-bottom: 2px solid #cbd5e1; position: relative; margin-bottom: 20px; overflow: hidden; border-radius: 8px; }
+        .train-track::before { content: ""; position: absolute; bottom: 5px; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, #94a3b8, #94a3b8 10px, transparent 10px, transparent 20px); }
+        .train-sprite { position: absolute; bottom: 8px; left: -100px; font-size: 24px; animation: trainRun 4s linear infinite; }
+        @keyframes trainRun { 0% { left: -100px; } 80% { left: 110%; } 100% { left: 110%; } }
+
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; border: 1px solid #e2e8f0; position: relative; }
         .version { font-size: 0.7rem; color: #94a3b8; text-align: right; margin-bottom: 5px; font-weight: bold; }
         
-        /* ヘッダーエリア */
         header { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; position: relative; }
         .header-logo { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); background: white; object-fit: contain; }
         h1 { font-size: 1.6rem; color: var(--primary); margin: 0; }
 
-        /* BGMコントロールボタン */
         .bgm-controls { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
-        .btn-bgm { background: white; border: 1px solid #cbd5e1; border-radius: 20px; padding: 5px 12px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .btn-bgm:hover { background: #f8fafc; }
+        .btn-bgm { background: white; border: 1px solid #cbd5e1; border-radius: 20px; padding: 5px 12px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; }
 
+        /* 見出しサイズ調整 */
         .card h2 { font-size: 1rem; margin: 0 0 15px 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; color: #1e293b; }
         label { display: block; margin-top: 12px; font-size: 0.85rem; font-weight: bold; color: #64748b; }
         input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         
-        .price-alert { padding: 10px; border-radius: 8px; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; text-align: center; }
-        .hike-yes { color: #ffffff; background-color: #ef4444; }
-        .hike-no { color: #94a3b8; background-color: #ffffff; border: 1px solid #e2e8f0; font-weight: normal; }
+        /* よく使うルートのリストスタイル */
+        .favorite-route { background: var(--light-blue); padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #c3dafe; }
+        .favorite-route span { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+        .btn-fav-go { background: var(--primary); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
 
-        .mascot-area { display: none; align-items: flex-start; gap: 10px; margin-top: 20px; animation: pop 0.3s ease-out; }
-        @keyframes pop { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
-        .mascot-img { width: 80px; height: auto; border-radius: 10px; object-fit: contain; }
+        .price-alert { padding: 10px; border-radius: 8px; font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; text-align: center; border: 1px solid #cbd5e1; }
+        .hike-yes { color: #ffffff; background-color: #ef4444; }
+        .hike-no { color: #94a3b8; background-color: #ffffff; }
+
+        .mascot-area { display: none; align-items: flex-start; gap: 10px; margin-top: 20px; }
+        .mascot-img { width: 60px; height: auto; border-radius: 10px; object-fit: contain; }
         
-        .bubble { position: relative; padding: 15px; border-radius: 15px; flex: 1; font-weight: bold; font-size: 1.1rem; border: 3px solid; }
-        .bubble::after { content: ''; position: absolute; left: -12px; top: 20px; border-style: solid; border-width: 10px 12px 10px 0; }
+        .bubble { position: relative; padding: 15px; border-radius: 15px; flex: 1; font-weight: bold; font-size: 1rem; border: 3px solid; }
+        .bubble::after { content: ''; position: absolute; left: -12px; top: 15px; border-style: solid; border-width: 8px 12px 8px 0; }
         .is-valid .bubble { background: #dcfce7; color: var(--success); border-color: var(--success); }
         .is-valid .bubble::after { border-color: transparent var(--success) transparent transparent; }
-        .is-invalid .bubble { background: #fff7ed; color: var(--warning); border-color: var(--warning); }
-        .is-invalid .bubble::after { border-color: transparent var(--warning) transparent transparent; }
+        .is-invalid .bubble { background: #fff7ed; color: var(--warning); border-color: #fbd38d; }
+        .is-invalid .bubble::after { border-color: transparent #fbd38d transparent transparent; }
 
         .btn-main { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; width: 100%; margin-top: 20px; }
-        .btn-save { background: var(--gray); width: 100%; margin-top: 15px; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-teiki-check { background: #ffffff; border: 2px solid var(--gray); color: var(--gray); width: 100%; margin-top: 10px; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; display: none; }
+        .btn-save { background: var(--gray); width: 100%; margin-top: 15px; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; }
+        .btn-teiki-check { background: #ffffff; border: 2px solid var(--gray); color: var(--gray); width: 100%; margin-top: 10px; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button:hover { opacity: 0.9; }
     </style>
 </head>
@@ -48,11 +57,15 @@
 
     <audio id="trainBgm" src="trainBGM.mp3" loop></audio>
 
-    <div class="version">Prototype v1.09</div>
+    <div class="version">Prototype v1.15</div>
+
+    <div class="train-track">
+        <div class="train-sprite">🚃🚋🚋💨</div>
+    </div>
+
     <header>
         <img src="NUKOekiin.png" alt="NUKO" class="header-logo">
         <h1>ライト乗換案内</h1>
-        
         <div class="bgm-controls">
             <button class="btn-bgm" onclick="toggleBgm()" id="bgmBtn">
                 <span>🔈</span> <span>BGM OFF</span>
@@ -61,23 +74,49 @@
     </header>
 
     <div class="card">
-        <h2>⚙️ 定期・拠点・経由駅の設定</h2>
-        <label>最寄り駅 (よく使う駅を3つまで)</label>
+        <h2>⚙️ 定期・拠点・よく使うルートの設定</h2>
+        <label>最寄り駅 (3つまで)</label>
         <div style="display: flex; gap: 6px;">
-            <input type="text" id="h1" placeholder="池袋">
-            <input type="text" id="h2" placeholder="新宿">
-            <input type="text" id="h3" placeholder="">
+            <input type="text" id="h1" placeholder="駅1">
+            <input type="text" id="h2" placeholder="駅2">
+            <input type="text" id="h3" placeholder="駅3">
         </div>
 
-        <label>定期券ルート設定</label>
+        <label>定期券情報</label>
         <div style="display: flex; flex-direction: column; gap: 6px;">
-            <input type="text" id="ts" placeholder="定期 出発">
-            <input type="text" id="v1" placeholder="定期 経由">
-            <input type="text" id="te" placeholder="定期 到着">
+            <input type="text" id="ts" placeholder="定期 出発駅">
+            <input type="text" id="v1" placeholder="定期 経由（乗換駅）">
+            <input type="text" id="te" placeholder="定期 到着駅">
+            <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
+            <input type="date" id="p_date">
+        </div>
+
+        <label>よく使うルート (3つまで)</label>
+        <div style="background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0;">
+            <div style="margin-bottom:10px;">
+                <span style="font-size:0.75rem; font-weight:bold;">ルート1</span>
+                <div style="display:flex; gap:5px;"><input type="text" id="f1s" placeholder="出発"> <input type="text" id="f1d" placeholder="到着"></div>
+            </div>
+            <div style="margin-bottom:10px;">
+                <span style="font-size:0.75rem; font-weight:bold;">ルート2</span>
+                <div style="display:flex; gap:5px;"><input type="text" id="f2s" placeholder="出発"> <input type="text" id="f2d" placeholder="到着"></div>
+            </div>
+            <div>
+                <span style="font-size:0.75rem; font-weight:bold;">ルート3</span>
+                <div style="display:flex; gap:5px;"><input type="text" id="f3s" placeholder="出発"> <input type="text" id="f3d" placeholder="到着"></div>
+            </div>
         </div>
         
         <button class="btn-save" onclick="saveData()">設定を保存する</button>
-        <button id="btnTeikiSearch" class="btn-teiki-check" onclick="searchTeiki()">ジョルダンで定期ルート検索を開く</button>
+
+        <div id="teikiLinkArea" style="display:none;">
+            <button class="btn-teiki-check" onclick="searchTeiki()">ジョルダンで 定期ルート検索 を開く</button>
+        </div>
+    </div>
+
+    <div id="favArea" class="card" style="display:none;">
+        <h2 style="color: var(--success); border-bottom-color: var(--success);">⭐ よく使うルート</h2>
+        <div id="favList"></div>
     </div>
 
     <div class="card">
@@ -89,32 +128,26 @@
         <select id="startSelect"></select>
         
         <label>目的地</label>
-        <input type="text" id="destInput" placeholder="例：本郷3丁目" oninput="judgePass()">
+        <input type="text" id="destInput" placeholder="目的駅を入力" style="border: 2px solid #000;" oninput="judgePass()">
 
         <div id="passStatus" class="mascot-area">
             <img src="NUKOekiin.png" alt="NUKO" class="mascot-img">
             <div class="bubble" id="statusMessage"></div>
         </div>
 
-        <hr style="margin: 25px 0 15px 0; border: 0; border-top: 1px dashed #cbd5e1;">
+        <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #cbd5e1;">
 
         <button class="btn-main" onclick="searchNormal()">ジョルダンでルート検索を開く</button>
     </div>
 
     <script>
-        // BGM切り替えロジック
         const bgm = document.getElementById('trainBgm');
         const bgmBtn = document.getElementById('bgmBtn');
         let isPlaying = false;
 
         function toggleBgm() {
-            if (isPlaying) {
-                bgm.pause();
-                bgmBtn.innerHTML = '<span>🔈</span> <span>BGM OFF</span>';
-            } else {
-                bgm.play();
-                bgmBtn.innerHTML = '<span>🔊</span> <span style="color:var(--success)">BGM ON</span>';
-            }
+            if (isPlaying) { bgm.pause(); bgmBtn.innerHTML = '<span>🔈</span> <span>BGM OFF</span>'; }
+            else { bgm.play(); bgmBtn.innerHTML = '<span>🔊</span> <span style="color:var(--success)">BGM ON</span>'; }
             isPlaying = !isPlaying;
         }
 
@@ -127,10 +160,7 @@
         function normalizeStationName(name) {
             if (!name) return "";
             let n = name.trim();
-            const numMap = { 
-                '1':'一', '2':'二', '3':'三', '4':'四', '5':'五', '6':'六', '7':'七', '8':'八', '9':'九', '0':'〇',
-                '１':'一', '２':'二', '３':'三', '４':'四', '５':'五', '６':'六', '７':'七', '８':'八', '９':'九', '０':'〇'
-            };
+            const numMap = { '1':'一', '2':'二', '3':'三', '4':'四', '5':'五', '6':'六', '7':'七', '8':'八', '9':'九', '0':'〇','１':'一', '２':'二', '３':'三', '４':'四', '５':'五', '６':'六', '７':'七', '８':'八', '９':'九', '０':'〇'};
             n = n.replace(/[0-9０-９]/g, (s) => numMap[s] || s);
             n = n.replace(/駅$/, "").replace(/ヶ|ヶ|個/g, "ケ");
             return n;
@@ -139,36 +169,59 @@
         function saveData() {
             const d = {
                 h1: document.getElementById('h1').value, h2: document.getElementById('h2').value, h3: document.getElementById('h3').value,
-                ts: document.getElementById('ts').value, te: document.getElementById('te').value, v1: document.getElementById('v1').value
+                ts: document.getElementById('ts').value, te: document.getElementById('te').value, v1: document.getElementById('v1').value,
+                p_date: document.getElementById('p_date').value,
+                f1s: document.getElementById('f1s').value, f1d: document.getElementById('f1d').value,
+                f2s: document.getElementById('f2s').value, f2d: document.getElementById('f2d').value,
+                f3s: document.getElementById('f3s').value, f3d: document.getElementById('f3d').value
             };
-            localStorage.setItem('lite_transit_109', JSON.stringify(d));
+            localStorage.setItem('lite_transit_115', JSON.stringify(d));
             alert('設定を保存しました。');
             location.reload();
         }
 
         window.onload = function() {
-            const raw = localStorage.getItem('lite_transit_109');
+            const raw = localStorage.getItem('lite_transit_115');
             if (raw) {
                 const d = JSON.parse(raw);
                 document.getElementById('h1').value = d.h1||''; document.getElementById('h2').value = d.h2||''; document.getElementById('h3').value = d.h3||'';
                 document.getElementById('ts').value = d.ts||''; document.getElementById('te').value = d.te||''; document.getElementById('v1').value = d.v1||'';
+                document.getElementById('p_date').value = d.p_date||'';
+                document.getElementById('f1s').value = d.f1s||''; document.getElementById('f1d').value = d.f1d||'';
+                document.getElementById('f2s').value = d.f2s||''; document.getElementById('f2d').value = d.f2d||'';
+                document.getElementById('f3s').value = d.f3s||''; document.getElementById('f3d').value = d.f3d||'';
+
                 const sel = document.getElementById('startSelect');
                 [d.h1, d.h2, d.h3].forEach(h => { if(h) sel.add(new Option(h, h)); });
+                
                 checkPriceHike(d);
-                if(d.ts && d.te) { document.getElementById('btnTeikiSearch').style.display = 'block'; }
+                if(d.ts && d.te) document.getElementById('teikiLinkArea').style.display = 'block';
+                renderFavs(d);
             }
         };
+
+        function renderFavs(d) {
+            const list = document.getElementById('favList');
+            const area = document.getElementById('favArea');
+            let hasFav = false;
+            list.innerHTML = "";
+            [[d.f1s, d.f1d], [d.f2s, d.f2d], [d.f3s, d.f3d]].forEach(pair => {
+                if (pair[0] && pair[1]) {
+                    hasFav = true;
+                    const div = document.createElement('div');
+                    div.className = 'favorite-route';
+                    div.innerHTML = `<span>${pair[0]} ➔ ${pair[1]}</span><button class="btn-fav-go" onclick="launchJorudan('${pair[0]}','${pair[1]}')">検索</button>`;
+                    list.appendChild(div);
+                }
+            });
+            if (hasFav) area.style.display = 'block';
+        }
 
         function checkPriceHike(d) {
             const area = document.getElementById('priceAlertArea');
             const hasJR = [d.ts, d.te, d.v1].some(s => s && s.includes("JR"));
-            if (hasJR) {
-                area.className = "price-alert hike-yes";
-                area.innerText = "🚨 4/1に料金変更予定あり（JR区間）";
-            } else {
-                area.className = "price-alert hike-no";
-                area.innerText = "当月内の料金変更なし";
-            }
+            if (hasJR) { area.className = "price-alert hike-yes"; area.innerText = "🚨 4/1に料金変更予定あり（JR区間）"; }
+            else { area.className = "price-alert hike-no"; area.innerText = "当月内の料金変更なし"; }
         }
 
         function judgePass() {
@@ -176,26 +229,20 @@
             const container = document.getElementById('passStatus');
             const messageBox = document.getElementById('statusMessage');
             const dest = normalizeStationName(destRaw);
-            const points = [
-                normalizeStationName(document.getElementById('ts').value),
-                normalizeStationName(document.getElementById('v1').value),
-                normalizeStationName(document.getElementById('te').value)
-            ].filter(s => s !== "");
+            const ts = normalizeStationName(document.getElementById('ts').value);
+            const v1 = normalizeStationName(document.getElementById('v1').value);
+            const te = normalizeStationName(document.getElementById('te').value);
+            const points = [ts, v1, te].filter(s => s !== "");
 
             if (!dest || points.length < 2) { container.style.display = 'none'; return; }
 
             let canUse = false;
             for (let i = 0; i < points.length - 1; i++) {
-                const pS = points[i];
-                const pE = points[i+1];
+                const pS = points[i]; const pE = points[i+1];
                 for (let line in LINE_DATA) {
                     const stations = LINE_DATA[line].map(s => normalizeStationName(s));
-                    const idxS = stations.indexOf(pS);
-                    const idxE = stations.indexOf(pE);
-                    const idxD = stations.indexOf(dest);
-                    if (idxS !== -1 && idxE !== -1 && idxD >= Math.min(idxS, idxE) && idxD <= Math.max(idxS, idxE)) {
-                        canUse = true; break;
-                    }
+                    const idxS = stations.indexOf(pS); const idxE = stations.indexOf(pE); const idxD = stations.indexOf(dest);
+                    if (idxS !== -1 && idxE !== -1 && idxD >= Math.min(idxS, idxE) && idxD <= Math.max(idxS, idxE)) { canUse = true; break; }
                 }
                 if (canUse) break;
             }
@@ -210,11 +257,15 @@
             }
         }
 
+        function launchJorudan(s, d) {
+            const url = `https://www.jorudan.co.jp/norikae/cgi/nori.cgi?eki1=${encodeURIComponent(s)}&eki2=${encodeURIComponent(d)}&Spriority=2&rf=nr&pg=0&eok1=R-&eok2=R-&type=t`;
+            window.open(url, '_blank');
+        }
+
         function searchTeiki() {
             const ts = document.getElementById('ts').value;
             const te = document.getElementById('te').value;
             const v1 = document.getElementById('v1').value;
-            if (!ts || !te) return;
             const viaParam = v1 ? `&eki3=${encodeURIComponent(v1)}` : "";
             const url = `https://www.jorudan.co.jp/norikae/cgi/nori.cgi?eki1=${encodeURIComponent(ts)}&eki2=${encodeURIComponent(te)}${viaParam}&Spriority=2&rf=nr&pg=0&eok1=R-&eok2=R-&type=t`;
             window.open(url, '_blank');
@@ -224,8 +275,7 @@
             const start = document.getElementById('startSelect').value;
             const dest = document.getElementById('destInput').value;
             if (!dest) return alert('目的地を入力してください');
-            const url = `https://www.jorudan.co.jp/norikae/cgi/nori.cgi?eki1=${encodeURIComponent(start)}&eki2=${encodeURIComponent(dest)}&Spriority=2&rf=nr&pg=0&eok1=R-&eok2=R-&type=t`;
-            window.open(url, '_blank');
+            launchJorudan(start, dest);
         }
     </script>
 </body>
