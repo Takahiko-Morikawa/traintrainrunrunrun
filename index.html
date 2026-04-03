@@ -2,12 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ライト乗換案内 Prototype v1.17</title>
+    <title>ライト乗換案内 Prototype v1.18</title>
     <style>
         :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --gray: #475569; --light-blue: #eef2ff; }
         body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; color: #334155; line-height: 1.6; overflow-x: hidden; }
         
-        /* 電車アニメーション */
         .train-track { width: 100%; height: 40px; background: #e2e8f0; border-bottom: 2px solid #cbd5e1; position: relative; margin-bottom: 20px; overflow: hidden; border-radius: 8px; }
         .train-track::before { content: ""; position: absolute; bottom: 5px; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, #94a3b8, #94a3b8 10px, transparent 10px, transparent 20px); }
         .train-sprite { position: absolute; bottom: 8px; left: -100px; font-size: 24px; animation: trainRun 4s linear infinite; }
@@ -17,7 +16,6 @@
         header { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px; position: relative; }
         .header-logo { width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary); background: white; object-fit: contain; }
         h1 { font-size: 1.6rem; color: var(--primary); margin: 0; }
-
         .bgm-controls { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
         .btn-bgm { background: white; border: 1px solid #cbd5e1; border-radius: 20px; padding: 5px 12px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 5px; }
 
@@ -34,7 +32,6 @@
 
         .mascot-area { display: none; align-items: flex-start; gap: 10px; margin-top: 20px; }
         .mascot-img { width: 60px; height: auto; border-radius: 10px; object-fit: contain; }
-        
         .bubble { position: relative; padding: 15px; border-radius: 15px; flex: 1; font-weight: bold; font-size: 0.95rem; border: 3px solid; }
         .bubble::after { content: ''; position: absolute; left: -12px; top: 15px; border-style: solid; border-width: 8px 12px 8px 0; }
         .is-valid .bubble { background: #dcfce7; color: var(--success); border-color: var(--success); }
@@ -51,7 +48,7 @@
 <body>
 
     <audio id="trainBgm" src="trainBGM.mp3" loop></audio>
-    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.17</div>
+    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.18</div>
 
     <div class="train-track">
         <div class="train-sprite">🚃🚋🚋💨</div>
@@ -73,23 +70,19 @@
             <input type="text" id="h2" placeholder="駅2">
             <input type="text" id="h3" placeholder="駅3">
         </div>
-
         <label>定期券情報</label>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-            <input type="text" id="ts" placeholder="定期 出発駅">
-            <input type="text" id="v1" placeholder="定期 経由駅">
-            <input type="text" id="te" placeholder="定期 到着駅">
-            <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
-            <input type="date" id="p_date">
-        </div>
-
+        <input type="text" id="ts" placeholder="定期 出発駅">
+        <input type="text" id="v1" placeholder="定期 経由（乗換駅）">
+        <input type="text" id="te" placeholder="定期 到着駅">
+        <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
+        <input type="date" id="p_date">
+        
         <label>よく使うルート (3つまで)</label>
         <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f1s" placeholder="発1"> <input type="text" id="f1d" placeholder="着1"></div>
         <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f2s" placeholder="発2"> <input type="text" id="f2d" placeholder="着2"></div>
         <div style="display:flex; gap:5px;"><input type="text" id="f3s" placeholder="発3"> <input type="text" id="f3d" placeholder="着3"></div>
         
         <button class="btn-save" onclick="saveData()">設定を保存する</button>
-
         <div id="teikiLinkArea" style="display:none;">
             <button class="btn-teiki-check" onclick="searchTeiki()">ジョルダンで 定期ルート検索 を開く</button>
         </div>
@@ -101,38 +94,28 @@
     </div>
 
     <div class="card">
-        <h2 style="border-bottom-color: var(--primary); color: var(--primary);">🔍 本日のルート検索で定期が使えるか調べてみよう</h2>
-        
+        <h2 style="color: var(--primary);">🔍 本日のルート検索で定期が使えるか調べてみよう</h2>
         <div id="priceAlertArea" class="price-alert"></div>
-
         <label>出発地</label>
         <select id="startSelect"></select>
-        
         <label>目的地</label>
         <input type="text" id="destInput" placeholder="目的駅を入力" style="border: 2px solid #333;" oninput="judgePass()">
-
         <div id="passStatus" class="mascot-area">
             <img src="NUKOekiin.png" alt="NUKO" class="mascot-img">
             <div class="bubble" id="statusMessage"></div>
         </div>
-
         <button class="btn-main" onclick="searchNormal()">ジョルダンでルート検索を開く</button>
     </div>
 
     <script>
-        // 関東広域・主要路線データベース
+        // 路線DB（有楽町線・京葉線を拡充）
         const LINE_DATA = {
+            "有楽町線": ["和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","千川","要町","池袋","東池袋","護国寺","江戸川橋","飯田橋","市ケ谷","麹町","永田町","桜田門","有楽町","銀座一丁目","新富町","月島","豊洲","辰巳","新木場"],
+            "京葉線": ["東京","八丁堀","越中島","潮見","新木場","葛西臨海公園","舞浜","新浦安","市川塩浜","二俣新町","南船橋","新習志野","幕張豊砂","海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我"],
             "山手線": ["東京","神田","秋葉原","御徒町","上野","鶯谷","日暮里","西日暮里","田端","駒込","巣鴨","大塚","池袋","目白","高田馬場","新大久保","新宿","代々木","原宿","渋谷","恵比寿","目黒","五反田","大崎","品川","高輪ゲートウェイ","田町","浜松町","新橋","有楽町"],
             "埼京線": ["大崎","恵比寿","渋谷","新宿","池袋","板橋","十条","赤羽","北赤羽","浮間舟渡","戸田公園","戸田","北戸田","武蔵浦和","中浦和","南与野","与野本町","北与野","大宮"],
-            "京浜東北線": ["大宮","さいたま新都心","浦和","南浦和","蕨","西川口","川口","赤羽","東十条","王子","上中里","田端","西日暮里","日暮里","鶯谷","上野","御徒町","秋葉原","神田","東京","有楽町","新橋","浜松町","田町","高輪ゲートウェイ","品川","大井町","大森","蒲田","川崎","鶴見","新子安","東神奈川","横浜","桜木町","関内","石川町","山手","根岸","磯子","石川町","洋光台","港南台","本郷台","大船"],
-            "武蔵野線": ["府中本町","北府中","西国分寺","新小平","新秋津","東所沢","新座","北朝霞","西浦和","武蔵浦和","南浦和","東浦和","東川口","南越谷","越谷レイクタウン","吉川","吉川美南","新三郷","三郷","南流山","新松戸","西船橋"],
-            "湘南新宿ライン": ["前橋","高崎","本庄","深谷","熊谷","鴻巣","北本","桶川","上尾","大宮","浦和","赤羽","池袋","新宿","渋谷","恵比寿","大崎","武蔵小杉","横浜","戸塚","大船","藤沢","辻堂","茅ケ崎","平塚","二宮","国府津","小田原"],
-            "丸ノ内線": ["池袋","新大塚","茗荷谷","後楽園","本郷三丁目","御茶ノ水","淡路町","大手町","東京","銀座","霞ケ関","国会議事堂前","赤坂見附","四ツ谷","四谷三丁目","新宿御苑前","新宿三丁目","新宿","西新宿","中野坂上","新中野","東高円寺","新高円寺","阿佐ケ谷","荻窪"],
-            "東武スカイツリーライン": ["浅草","とうきょうスカイツリー","曳舟","北千住","小菅","五反野","梅島","西新井","竹ノ塚","谷塚","草加","獨協大学前","新田","蒲生","新越谷","越谷","北越谷","大袋","せんげん台","武里","一ノ割","春日部","北春日部","姫宮","東武動物公園"],
-            "東武東上線": ["池袋","北池袋","下板橋","大山","中板橋","ときわ台","上板橋","練馬北町","下赤塚","成増","和光市","朝霞","朝霞台","志木","柳瀬川","みずほ台","鶴瀬","ふじみ野","上福岡","新河岸","川越","川越市"],
-            "西武池袋線": ["池袋","椎名町","東長崎","江古田","桜台","練馬","中村橋","富士見台","練馬高野台","石神井公園","大泉学園","保谷","ひばりヶ丘","東久留米","清瀬","秋津","所沢","西所沢","小手指"],
-            "西武新宿線": ["西武新宿","高田馬場","下落合","中井","新井薬師前","沼袋","野方","都立家政","鷺ノ宮","下井草","井荻","上井草","上石神井","武蔵関","東伏見","西武柳沢","田無","花小金井","小平","久米川","東村山","所沢","航空公園","新所沢"],
-            "東急東横線": ["渋谷","代官山","中目黒","祐天寺","学芸大学","都立大学","自由が丘","田園調布","多摩川","新丸子","武蔵杉","元住吉","日吉","綱島","大倉山","菊名","妙蓮寺","白楽","東白楽","反町","横浜"]
+            "京浜東北線": ["大宮","さいたま新都心","浦和","南浦和","蕨","西川口","川口","赤羽","東十条","王子","上中里","田端","西日暮里","日暮里","鶯谷","上野","御徒町","秋葉原","神田","東京","有楽町","新橋","浜松町","田町","高輪ゲートウェイ","品川","大井町","大森","蒲田","川崎","鶴見","新子安","東神奈川","横浜","桜木町","関内","石川町","山手","根岸","磯子","屏風浦","洋光台","港南台","本郷台","大船"],
+            "中央線(快速)": ["東京","神田","御茶ノ水","四ツ谷","新宿","中野","高円寺","阿佐ケ谷","荻窪","西荻窪","吉祥寺","三鷹","武蔵境","東小金井","武蔵小金井","国分寺","西国分寺","国立","立川","日野","豊田","八王子","西八王子","高尾"]
         };
 
         function normalize(s) {
@@ -142,7 +125,6 @@
             return n.replace(/[0-9０-９]/g, m => map[m]||m).replace(/ヶ|ヶ|個/g, "ケ");
         }
 
-        // 保存機能（p_dateを含めて確実に実行）
         function saveData() {
             try {
                 const d = {
@@ -153,16 +135,14 @@
                     f2s: document.getElementById('f2s').value, f2d: document.getElementById('f2d').value,
                     f3s: document.getElementById('f3s').value, f3d: document.getElementById('f3d').value
                 };
-                localStorage.setItem('lite_transit_117', JSON.stringify(d));
-                alert('設定を保存しました。');
+                localStorage.setItem('lite_transit_118', JSON.stringify(d));
+                alert('設定を保存しました');
                 location.reload();
-            } catch (e) {
-                alert('保存エラーが発生しました。入力を確認してください。');
-            }
+            } catch(e) { alert('保存エラー'); }
         }
 
         window.onload = function() {
-            const raw = localStorage.getItem('lite_transit_117');
+            const raw = localStorage.getItem('lite_transit_118');
             if (raw) {
                 const d = JSON.parse(raw);
                 document.getElementById('h1').value = d.h1||''; document.getElementById('h2').value = d.h2||''; document.getElementById('h3').value = d.h3||'';
@@ -171,10 +151,8 @@
                 document.getElementById('f1s').value = d.f1s||''; document.getElementById('f1d').value = d.f1d||'';
                 document.getElementById('f2s').value = d.f2s||''; document.getElementById('f2d').value = d.f2d||'';
                 document.getElementById('f3s').value = d.f3s||''; document.getElementById('f3d').value = d.f3d||'';
-
                 const sel = document.getElementById('startSelect');
                 [d.h1, d.h2, d.h3].forEach(h => { if(h) sel.add(new Option(h, h)); });
-                
                 checkPriceHike(d);
                 if(d.ts && d.te) document.getElementById('teikiLinkArea').style.display = 'block';
                 renderFavs(d);
@@ -218,6 +196,7 @@
             if (!dest || points.length < 2) { container.style.display = 'none'; return; }
 
             let canUse = false;
+            // 隣り合う経由地ごとに区間判定（ts-v1, v1-te）
             for (let i = 0; i < points.length - 1; i++) {
                 const pS = points[i]; const pE = points[i+1];
                 for (let line in LINE_DATA) {
@@ -229,13 +208,8 @@
             }
 
             container.style.display = 'flex';
-            if (canUse) {
-                container.className = 'mascot-area is-valid';
-                messageBox.innerHTML = `出発進行！<br>${destRaw}は定期券が使えますよ！`;
-            } else {
-                container.className = 'mascot-area is-invalid';
-                messageBox.innerHTML = `注意！<br>${destRaw}は定期区間外のようです。`;
-            }
+            if (canUse) { container.className = 'mascot-area is-valid'; messageBox.innerHTML = `出発進行！<br>${destRaw}は定期券が使えますよ！`; }
+            else { container.className = 'mascot-area is-invalid'; messageBox.innerHTML = `注意！<br>${destRaw}は定期区間外のようです。`; }
         }
 
         function launchJorudan(s, d) {
