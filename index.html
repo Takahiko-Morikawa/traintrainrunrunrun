@@ -2,11 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ライト乗換案内 Prototype v1.21</title>
+    <title>ライト乗換案内 Prototype v1.23</title>
     <style>
         :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --gray: #475569; --light-blue: #eef2ff; }
         body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; color: #334155; line-height: 1.6; overflow-x: hidden; }
         
+        /* 電車アニメーション */
         .train-track { width: 100%; height: 40px; background: #e2e8f0; border-bottom: 2px solid #cbd5e1; position: relative; margin-bottom: 20px; overflow: hidden; border-radius: 8px; }
         .train-track::before { content: ""; position: absolute; bottom: 5px; width: 100%; height: 2px; background: repeating-linear-gradient(90deg, #94a3b8, #94a3b8 10px, transparent 10px, transparent 20px); }
         .train-sprite { position: absolute; bottom: 8px; left: -100px; font-size: 24px; animation: trainRun 4s linear infinite; }
@@ -48,7 +49,7 @@
 <body>
 
     <audio id="trainBgm" src="trainBGM.mp3" loop></audio>
-    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.21</div>
+    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.23</div>
 
     <div class="train-track">
         <div class="train-sprite">🚃🚋🚋💨</div>
@@ -70,12 +71,17 @@
             <input type="text" id="h2" placeholder="駅2">
             <input type="text" id="h3" placeholder="駅3">
         </div>
+        
         <label>定期券情報</label>
-        <input type="text" id="ts" placeholder="定期 出発（東池袋）">
-        <input type="text" id="v1" placeholder="定期 経由（池袋）">
-        <input type="text" id="te" placeholder="定期 到着（飯能）">
-        <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
-        <input type="date" id="p_date">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <input type="text" id="ts" placeholder="定期 出発駅（例：東池袋）">
+            <input type="text" id="v1" placeholder="定期 経由駅1（例：池袋）">
+            <input type="text" id="v2" placeholder="定期 経由駅2（例：銀座）">
+            <input type="text" id="v3" placeholder="定期 経由駅3（例：新橋）">
+            <input type="text" id="te" placeholder="定期 到着駅（例：お台場海浜公園）">
+            <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
+            <input type="date" id="p_date">
+        </div>
         
         <label>よく使うルート (3つまで)</label>
         <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f1s" placeholder="発1"> <input type="text" id="f1d" placeholder="着1"></div>
@@ -108,12 +114,14 @@
     </div>
 
     <script>
-        // 路線DB（西武池袋線を飯能まで完備）
         const LINE_DATA = {
-            "西武池袋線": ["池袋", "椎名町", "東長崎", "江古田", "桜台", "練馬", "中村橋", "富士見台", "練馬高野台", "石神井公園", "大泉学園", "保谷", "ひばりヶ丘", "東久留米", "清瀬", "秋津", "所沢", "西所沢", "小手指", "狭山ヶ丘", "武蔵藤沢", "稲荷山公園", "入間市", "仏子", "元加治", "飯能"],
             "有楽町線": ["和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","千川","要町","池袋","東池袋","護国寺","江戸川橋","飯田橋","市ケ谷","麹町","永田町","桜田門","有楽町","銀座一丁目","新富町","月島","豊洲","辰巳","新木場"],
+            "丸ノ内線": ["池袋","新大塚","茗荷谷","後楽園","本郷三丁目","御茶ノ水","淡路町","大手町","東京","銀座","霞ケ関","国会議事堂前","赤坂見附","四ツ谷","四谷三丁目","新宿御苑前","新宿三丁目","新宿","西新宿","中野坂上","新中野","東高円寺","新高円寺","阿佐ケ谷","荻窪"],
+            "銀座線": ["浅草", "田原町", "稲荷町", "上野", "上野広小路", "末広町", "神田", "三越前", "日本橋", "京橋", "銀座", "新橋", "虎ノ門", "溜池山王", "赤坂見附", "青山一丁目", "外苑前", "表参道", "渋谷"],
+            "ゆりかもめ": ["新橋", "汐留", "竹芝", "日の出", "芝浦ふ頭", "お台場海浜公園", "台場", "東京国際クルーズターミナル", "テレコムセンター", "青海", "東京ビッグサイト", "有明", "有明テニスの森", "市場前", "新豊洲", "豊洲"],
+            "西武池袋線": ["池袋", "椎名町", "東長崎", "江古田", "桜台", "練馬", "中村橋", "富士見台", "練馬高野台", "石神井公園", "大泉学園", "保谷", "ひばりヶ丘", "東久留米", "清瀬", "秋津", "所沢", "西所沢", "小手指", "狭山ヶ丘", "武蔵藤沢", "稲荷山公園", "入間市", "仏子", "元加治", "飯能"],
             "副都心・東横・みなとみらい線": ["和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","千川","要町","池袋","雑司が谷","西早稲田","東新宿","新宿三丁目","北参道","明治神宮前","渋谷","代官山","中目黒","祐天寺","学芸大学","都立大学","自由が丘","田園調布","多摩川","新丸子","武蔵小杉","元住吉","日吉","綱島","大倉山","菊名","妙蓮寺","白楽","東白楽","反町","横浜","新高島","みなとみらい","馬車道","日本大通り","元町・中華街"],
-            "山手線": ["東京","神田","秋葉原","御徒町","上野","鶯谷","日暮里","西日暮里","田端","駒込","巣鴨","大塚","池袋","目白","高田馬場","新大久保","新宿","代々木","原宿","渋谷","恵比寿","目黒","五反田","大崎","品川","高輪ゲートウェイ","田町","浜松町","新橋","有楽町"],
+            "山手線": ["東京","神田","秋葉原","御徒町","上野","鶯谷","日暮里","西日暮里","田端","駒込","巣鴨","大塚","池袋","目白","高田馬場","新大久保","新宿","代々木","原宿","渋谷","恵比寿","目黒","五反田","大崎","品川","高輪ゲートウェイ","田町","浜松町","新橋","ยูรัคโช"],
             "京葉線": ["東京","八丁堀","越中島","潮見","新木場","葛西臨海公園","舞浜","新浦安","市川塩浜","二俣新町","南船橋","新習志野","幕張豊砂","海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我"]
         };
 
@@ -129,24 +137,26 @@
             try {
                 const d = {
                     h1: document.getElementById('h1').value, h2: document.getElementById('h2').value, h3: document.getElementById('h3').value,
-                    ts: document.getElementById('ts').value, te: document.getElementById('te').value, v1: document.getElementById('v1').value,
+                    ts: document.getElementById('ts').value, te: document.getElementById('te').value, 
+                    v1: document.getElementById('v1').value, v2: document.getElementById('v2').value, v3: document.getElementById('v3').value,
                     p_date: document.getElementById('p_date').value,
                     f1s: document.getElementById('f1s').value, f1d: document.getElementById('f1d').value,
                     f2s: document.getElementById('f2s').value, f2d: document.getElementById('f2d').value,
                     f3s: document.getElementById('f3s').value, f3d: document.getElementById('f3d').value
                 };
-                localStorage.setItem('lite_transit_121', JSON.stringify(d));
+                localStorage.setItem('lite_transit_123', JSON.stringify(d));
                 alert('設定を保存しました');
                 location.reload();
             } catch(e) { alert('保存エラー'); }
         }
 
         window.onload = function() {
-            const raw = localStorage.getItem('lite_transit_121');
+            const raw = localStorage.getItem('lite_transit_123');
             if (raw) {
                 const d = JSON.parse(raw);
                 document.getElementById('h1').value = d.h1||''; document.getElementById('h2').value = d.h2||''; document.getElementById('h3').value = d.h3||'';
-                document.getElementById('ts').value = d.ts||''; document.getElementById('te').value = d.te||''; document.getElementById('v1').value = d.v1||'';
+                document.getElementById('ts').value = d.ts||''; document.getElementById('te').value = d.te||''; 
+                document.getElementById('v1').value = d.v1||''; document.getElementById('v2').value = d.v2||''; document.getElementById('v3').value = d.v3||'';
                 document.getElementById('p_date').value = d.p_date||'';
                 document.getElementById('f1s').value = d.f1s||''; document.getElementById('f1d').value = d.f1d||'';
                 document.getElementById('f2s').value = d.f2s||''; document.getElementById('f2d').value = d.f2d||'';
@@ -178,7 +188,7 @@
 
         function checkPriceHike(d) {
             const area = document.getElementById('priceAlertArea');
-            const hasJR = [d.ts, d.te, d.v1].some(s => s && s.includes("JR"));
+            const hasJR = [d.ts, d.te, d.v1, d.v2, d.v3].some(s => s && s.includes("JR"));
             if (hasJR) { area.className = "price-alert hike-yes"; area.innerText = "🚨 料金変更予定あり（JR区間）"; }
             else { area.className = "price-alert hike-no"; area.innerText = "当月内の料金変更なし"; }
         }
@@ -188,10 +198,14 @@
             const container = document.getElementById('passStatus');
             const messageBox = document.getElementById('statusMessage');
             const dest = normalize(destRaw);
+            
             const ts = normalize(document.getElementById('ts').value);
             const v1 = normalize(document.getElementById('v1').value);
+            const v2 = normalize(document.getElementById('v2').value);
+            const v3 = normalize(document.getElementById('v3').value);
             const te = normalize(document.getElementById('te').value);
-            const points = [ts, v1, te].filter(s => s !== "");
+            
+            const points = [ts, v1, v2, v3, te].filter(s => s !== "");
 
             if (!dest || points.length < 2) { container.style.display = 'none'; return; }
 
@@ -216,12 +230,23 @@
             window.open(url, '_blank');
         }
 
+        // ★ `&c=1` を追加してジョルダン側の経由駅指定を強制オンにする修正
         function searchTeiki() {
             const ts = document.getElementById('ts').value;
             const te = document.getElementById('te').value;
             const v1 = document.getElementById('v1').value;
-            const viaParam = v1 ? `&eki3=${encodeURIComponent(v1)}` : "";
-            const url = `https://www.jorudan.co.jp/norikae/cgi/nori.cgi?eki1=${encodeURIComponent(ts)}&eki2=${encodeURIComponent(te)}${viaParam}&Spriority=2&rf=nr&pg=0&eok1=R-&eok2=R-&type=t`;
+            const v2 = document.getElementById('v2').value;
+            const v3 = document.getElementById('v3').value;
+            if (!ts || !te) return;
+            
+            let viaParam = "";
+            if (v1) viaParam += `&eki3=${encodeURIComponent(v1)}`;
+            if (v2) viaParam += `&eki4=${encodeURIComponent(v2)}`;
+            if (v3) viaParam += `&eki5=${encodeURIComponent(v3)}`;
+            
+            const cParam = (v1 || v2 || v3) ? "&c=1" : "";
+            
+            const url = `https://www.jorudan.co.jp/norikae/cgi/nori.cgi?eki1=${encodeURIComponent(ts)}&eki2=${encodeURIComponent(te)}${viaParam}${cParam}&Spriority=2&rf=nr&pg=0&eok1=R-&eok2=R-&type=t`;
             window.open(url, '_blank');
         }
 
