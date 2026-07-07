@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ライト乗換案内 Prototype v1.23</title>
+    <title>ライト乗換案内 Prototype v1.27</title>
     <style>
         :root { --primary: #2563eb; --success: #059669; --danger: #dc2626; --warning: #d97706; --gray: #475569; --light-blue: #eef2ff; }
         body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f1f5f9; color: #334155; line-height: 1.6; overflow-x: hidden; }
@@ -49,7 +49,7 @@
 <body>
 
     <audio id="trainBgm" src="trainBGM.mp3" loop></audio>
-    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.23</div>
+    <div style="text-align:right; font-size:0.6rem; color:#ccc; margin-bottom:5px;">Prototype v1.27</div>
 
     <div class="train-track">
         <div class="train-sprite">🚃🚋🚋💨</div>
@@ -67,26 +67,26 @@
         <h2>⚙️ 定期・拠点・よく使うルートの設定</h2>
         <label>最寄り駅 (3つまで)</label>
         <div style="display: flex; gap: 6px;">
-            <input type="text" id="h1" placeholder="駅1">
-            <input type="text" id="h2" placeholder="駅2">
-            <input type="text" id="h3" placeholder="駅3">
+            <input type="text" id="h1" placeholder="最寄り駅1">
+            <input type="text" id="h2" placeholder="最寄り駅2">
+            <input type="text" id="h3" placeholder="最寄り駅3">
         </div>
         
         <label>定期券情報</label>
         <div style="display: flex; flex-direction: column; gap: 6px;">
-            <input type="text" id="ts" placeholder="定期 出発駅（例：東池袋）">
-            <input type="text" id="v1" placeholder="定期 経由駅1（例：池袋）">
-            <input type="text" id="v2" placeholder="定期 経由駅2（例：銀座）">
-            <input type="text" id="v3" placeholder="定期 経由駅3（例：新橋）">
-            <input type="text" id="te" placeholder="定期 到着駅（例：お台場海浜公園）">
+            <input type="text" id="ts" placeholder="定期 出発駅">
+            <input type="text" id="v1" placeholder="定期 経由駅1">
+            <input type="text" id="v2" placeholder="定期 経由駅2">
+            <input type="text" id="v3" placeholder="定期 経由駅3">
+            <input type="text" id="te" placeholder="定期 到着駅">
             <label style="margin-top:5px; font-size:0.75rem;">定期購入日</label>
             <input type="date" id="p_date">
         </div>
         
         <label>よく使うルート (3つまで)</label>
-        <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f1s" placeholder="発1"> <input type="text" id="f1d" placeholder="着1"></div>
-        <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f2s" placeholder="発2"> <input type="text" id="f2d" placeholder="着2"></div>
-        <div style="display:flex; gap:5px;"><input type="text" id="f3s" placeholder="発3"> <input type="text" id="f3d" placeholder="着3"></div>
+        <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f1s" placeholder="出発地1"> <input type="text" id="f1d" placeholder="目的地1"></div>
+        <div style="display:flex; gap:5px; margin-bottom:5px;"><input type="text" id="f2s" placeholder="出発地2"> <input type="text" id="f2d" placeholder="目的地2"></div>
+        <div style="display:flex; gap:5px;"><input type="text" id="f3s" placeholder="出発地3"> <input type="text" id="f3d" placeholder="目的地3"></div>
         
         <button class="btn-save" onclick="saveData()">設定を保存する</button>
         <div id="teikiLinkArea" style="display:none;">
@@ -100,12 +100,12 @@
     </div>
 
     <div class="card">
-        <h2 style="color: var(--primary);">🔍 本日のルート検索で定期が使えるか調べてみよう</h2>
+        <h2>🔍 本日のルート検索で定期が使えるか調べてみよう</h2>
         <div id="priceAlertArea" class="price-alert"></div>
         <label>出発地</label>
         <select id="startSelect"></select>
         <label>目的地</label>
-        <input type="text" id="destInput" placeholder="目的駅を入力" style="border: 2px solid #333;" oninput="judgePass()">
+        <input type="text" id="destInput" placeholder="確認したい目的駅を入力" style="border: 2px solid #333;" oninput="judgePass()">
         <div id="passStatus" class="mascot-area">
             <img src="NUKOekiin.png" alt="NUKO" class="mascot-img">
             <div class="bubble" id="statusMessage"></div>
@@ -114,14 +114,23 @@
     </div>
 
     <script>
+        // 関東広域データベース（東西線・小田急線・京急本線を追加）
         const LINE_DATA = {
+            "東西線": ["中野","落合","高田馬場","早稲田","神楽坂","飯田橋","九段下","竹橋","大手町","日本橋","茅場町","門前仲町","木場","東陽町","南砂町","西葛西","葛西","浦安","南行徳","行徳","妙典","原木中山","西船橋"],
+            "小田急線": ["新宿","南新宿","参宮橋","代々木八幡","代々木上原","東北沢","下北沢","世田谷代田","梅ヶ丘","豪徳寺","経堂","千歳船橋","祖師ヶ谷大蔵","成城学園前","喜多見","狛江","和泉多摩川","登戸","向ヶ丘遊園","生田","読売ランド前","百合ヶ丘","新百合ヶ丘","柿生","鶴川","玉川学園前","町田","相模大野","小田急相模原","相武台前","座間","海老名","厚木","本厚木","愛甲石田","伊勢原","鶴巻温泉","東海大学前","秦野","渋沢","新松田","開成","栢山","富水","螢田","足柄","小田原"],
+            "京急本線": ["品川","北品川","新馬場","青物横丁","鮫洲","立会川","大森海岸","平和島","大森町","梅屋敷","京急蒲田","雑色","六郷土手","京急川崎","八丁畷","鶴見市場","京急鶴見","花月総持寺","生麦","京急新子安","子安","神奈川新町","東神奈川","神奈川","横浜","戸部","日ノ出町","黄金町","南太田","井土ヶ谷","弘明寺","上大岡","屏風浦","杉田","京急富岡","能見台","金沢文庫","金沢八景","追浜","京急田浦","安針塚","逸見","汐入","横須賀中央","県立大学","堀ノ内","京急大津","馬堀海岸","浦賀"],
+            "東武スカイツリーライン": ["浅草","とうきょうスカイツリー","曳舟","北千住","小菅","五反野","梅島","西新井","竹ノ塚","谷塚","草加","獨協大学前","新田","蒲生","新越谷","越谷","北越谷","大袋","せんげん台","武里","一ノ割","春日部","北春日部","姫宮","東武動物公園"],
+            "千代田線・常磐線(各停)": ["代々木上原","代々木公園","明治神宮前","表参道","乃木坂","赤坂","国会議事堂前","霞ケ関","日比谷","二重橋前","大手町","新御茶ノ水","湯島","根津","千駄木","西日暮里","町屋","北千住","綾瀬","亀有","金町","松戸","北松戸","馬橋","新松戸","北小金","南柏","柏","北柏","我孫子","天王台","取手"],
+            "常磐線(快速)": ["品川","新橋","東京","上野","日暮里","三河島","南千住","北千住","松戸","柏","我孫子","天王台","取手"],
+            "京浜東北線": ["大宮","さいたま新都心","浦和","南浦和","蕨","西川口","川口","赤羽","東十条","王子","上中里","田端","西日暮里","日暮里","鶯谷","上野","御徒町","秋葉原","神田","東京","有楽町","新橋","浜松町","田町","高輪ゲートウェイ","品川","大井町","大森","蒲田","川崎","鶴見","新子安","東神奈川","横浜","桜木町","関内","石川町","山手","根岸","磯子","屏風浦","洋光台","港南台","本郷台","大船"],
+            "中央線(快速)": ["東京","神田","御茶ノ水","四ツ谷","新宿","中野","高円寺","阿佐ケ谷","荻窪","西荻窪","吉祥寺","三鷹","武蔵境","東小金井","武蔵小金井","国分寺","西国分寺","国立","立川","日野","豊田","八王子","西八王子","高尾"],
             "有楽町線": ["和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","千川","要町","池袋","東池袋","護国寺","江戸川橋","飯田橋","市ケ谷","麹町","永田町","桜田門","有楽町","銀座一丁目","新富町","月島","豊洲","辰巳","新木場"],
             "丸ノ内線": ["池袋","新大塚","茗荷谷","後楽園","本郷三丁目","御茶ノ水","淡路町","大手町","東京","銀座","霞ケ関","国会議事堂前","赤坂見附","四ツ谷","四谷三丁目","新宿御苑前","新宿三丁目","新宿","西新宿","中野坂上","新中野","東高円寺","新高円寺","阿佐ケ谷","荻窪"],
             "銀座線": ["浅草", "田原町", "稲荷町", "上野", "上野広小路", "末広町", "神田", "三越前", "日本橋", "京橋", "銀座", "新橋", "虎ノ門", "溜池山王", "赤坂見附", "青山一丁目", "外苑前", "表参道", "渋谷"],
             "ゆりかもめ": ["新橋", "汐留", "竹芝", "日の出", "芝浦ふ頭", "お台場海浜公園", "台場", "東京国際クルーズターミナル", "テレコムセンター", "青海", "東京ビッグサイト", "有明", "有明テニスの森", "市場前", "新豊洲", "豊洲"],
             "西武池袋線": ["池袋", "椎名町", "東長崎", "江古田", "桜台", "練馬", "中村橋", "富士見台", "練馬高野台", "石神井公園", "大泉学園", "保谷", "ひばりヶ丘", "東久留米", "清瀬", "秋津", "所沢", "西所沢", "小手指", "狭山ヶ丘", "武蔵藤沢", "稲荷山公園", "入間市", "仏子", "元加治", "飯能"],
             "副都心・東横・みなとみらい線": ["和光市","地下鉄成増","地下鉄赤塚","平和台","氷川台","小竹向原","千川","要町","池袋","雑司が谷","西早稲田","東新宿","新宿三丁目","北参道","明治神宮前","渋谷","代官山","中目黒","祐天寺","学芸大学","都立大学","自由が丘","田園調布","多摩川","新丸子","武蔵小杉","元住吉","日吉","綱島","大倉山","菊名","妙蓮寺","白楽","東白楽","反町","横浜","新高島","みなとみらい","馬車道","日本大通り","元町・中華街"],
-            "山手線": ["東京","神田","秋葉原","御徒町","上野","鶯谷","日暮里","西日暮里","田端","駒込","巣鴨","大塚","池袋","目白","高田馬場","新大久保","新宿","代々木","原宿","渋谷","恵比寿","目黒","五反田","大崎","品川","高輪ゲートウェイ","田町","浜松町","新橋","ยูรัคโช"],
+            "山手線": ["東京","神田","秋葉原","御徒町","上野","鶯谷","日暮里","西日暮里","田端","駒込","巣鴨","大塚","池袋","目白","高田馬場","新大久保","新宿","代々木","原宿","渋谷","恵比寿","目黒","五反田","大崎","品川","高輪ゲートウェイ","田町","浜松町","新橋","有楽町"],
             "京葉線": ["東京","八丁堀","越中島","潮見","新木場","葛西臨海公園","舞浜","新浦安","市川塩浜","二俣新町","南船橋","新習志野","幕張豊砂","海浜幕張","検見川浜","稲毛海岸","千葉みなと","蘇我"]
         };
 
@@ -144,14 +153,14 @@
                     f2s: document.getElementById('f2s').value, f2d: document.getElementById('f2d').value,
                     f3s: document.getElementById('f3s').value, f3d: document.getElementById('f3d').value
                 };
-                localStorage.setItem('lite_transit_123', JSON.stringify(d));
+                localStorage.setItem('lite_transit_127', JSON.stringify(d));
                 alert('設定を保存しました');
                 location.reload();
             } catch(e) { alert('保存エラー'); }
         }
 
         window.onload = function() {
-            const raw = localStorage.getItem('lite_transit_123');
+            const raw = localStorage.getItem('lite_transit_127');
             if (raw) {
                 const d = JSON.parse(raw);
                 document.getElementById('h1').value = d.h1||''; document.getElementById('h2').value = d.h2||''; document.getElementById('h3').value = d.h3||'';
@@ -230,7 +239,6 @@
             window.open(url, '_blank');
         }
 
-        // ★ `&c=1` を追加してジョルダン側の経由駅指定を強制オンにする修正
         function searchTeiki() {
             const ts = document.getElementById('ts').value;
             const te = document.getElementById('te').value;
